@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dusty-utility</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 0.5rem;
+    }
+    header p {
+      color: #94a3b8;
+      font-size: 1rem;
+    }
+    #services {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 0.75rem;
+      padding: 1.25rem 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.15s, transform 0.15s;
+      display: block;
+    }
+    .card:hover {
+      border-color: #60a5fa;
+      transform: translateY(-2px);
+    }
+    .card-label {
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 0.35rem;
+    }
+    .card-desc {
+      font-size: 0.875rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>dusty-utility</h1>
+<p>Quick Launch deployment</p>  </header>
+  <main id="services"></main>
+  <script>
+    const services = [
+      {"name":"traefik","label":"Traefik","description":"Reverse proxy & TLS dashboard"},      {"name":"kuma","label":"Uptime Kuma","description":"Uptime monitoring dashboard"},      {"name":"freellm","label":"FreeLLMAPI","description":"OpenAI-compatible gateway over free-tier LLM providers"}    ];
+    const base = window.location.hostname;
+    const container = document.getElementById('services');
+    services.forEach(function(s) {
+      const a = document.createElement('a');
+      a.className = 'card';
+      a.href = 'https://' + s.name + '.' + base;
+      a.innerHTML =
+        '<div class="card-label">' + s.label + '</div>' +
+        '<div class="card-desc">' + s.description + '</div>';
+      container.appendChild(a);
+    });
+  </script>
+</body>
+</html>

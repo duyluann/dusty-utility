@@ -1,0 +1,8 @@
+services:
+  freellm:
+    ports:
+      - "3002:3001"
+
+networks:
+  traefik-net:
+    external: false

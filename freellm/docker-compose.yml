@@ -1,0 +1,38 @@
+networks:
+  traefik-net:
+    external: true
+
+volumes:
+  dusty-utility-freellm-data:
+
+services:
+  freellm:
+    image: ghcr.io/tashfeenahmed/freellmapi:${FREELLM_TAG:-v0.16.6}
+    container_name: dusty-utility-freellm
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      TRUST_PROXY: "1"
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    volumes:
+      - dusty-utility-freellm-data:/app/server/data
+    networks:
+      - traefik-net
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/api/ping').then((r) => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1));"
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    mem_limit: ${FREELLM_MEM_LIMIT:-1g}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${TRAEFIK_SUBDOMAIN}.${TRAEFIK_HOST}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=websecure
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3001

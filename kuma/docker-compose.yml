@@ -1,0 +1,35 @@
+networks:
+  traefik-net:
+    external: true
+
+services:
+  kuma:
+    image: louislam/uptime-kuma:2
+    container_name: dusty-utility-kuma
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik-net
+    extra_hosts:
+      - "${TRAEFIK_HOST}:host-gateway"
+      - "kuma.${TRAEFIK_HOST}:host-gateway"
+      - "freellm.${TRAEFIK_HOST}:host-gateway"
+    volumes:
+      - kuma_data:/app/data
+    labels:
+      - traefik.enable=true
+      # Monitor dashboard router
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${TRAEFIK_SUBDOMAIN}.${TRAEFIK_HOST}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=websecure
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}
+      # Status page router
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-status.rule=Host(`status.${TRAEFIK_HOST}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-status.entrypoints=websecure
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-status.tls.certresolver=letsencrypt
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-status.service=${COMPOSE_PROJECT_NAME}
+      # Shared backend
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3001
+
+volumes:
+  kuma_data:

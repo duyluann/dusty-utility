@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: deploy
+        type: choice
+        options: [deploy, stop]
+      ssh_user:
+        description: 'SSH user on the target server (e.g. ubuntu for EC2, root for other providers)'
+        required: false
+        default: root
+      deploy_path:
+        description: 'Absolute path where the repo is cloned on the server'
+        required: false
+        default: ~/my-apps
+
+jobs:
+  deploy:
+    if: github.event_name == 'push' || inputs.action == 'deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy
+        env:
+          SSH_USER: ${{ inputs.ssh_user || 'root' }}
+          DEPLOY_PATH: ${{ inputs.deploy_path || '~/my-apps' }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
+          TRAEFIK_HOST: ${{ secrets.SERVER_DOMAIN }}
+        run: |
+          install -d -m 700 ~/.ssh
+          echo "$SERVER_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          rsync -az --delete --filter=':- .gitignore' \
+            -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519" \
+            ./ ${SSH_USER}@${SERVER_IP}:${DEPLOY_PATH}/
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${SSH_USER}@${SERVER_IP} \
+            "cd ${DEPLOY_PATH} && TRAEFIK_HOST=${TRAEFIK_HOST} bash start.sh"
+
+  stop:
+    if: inputs.action == 'stop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop services
+        env:
+          SSH_USER: ${{ inputs.ssh_user || 'root' }}
+          DEPLOY_PATH: ${{ inputs.deploy_path }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          echo "$SERVER_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${SSH_USER}@${SERVER_IP} \
+            DEPLOY_PATH="${DEPLOY_PATH}" bash << 'ENDSSH'
+          set -euo pipefail
+          cd "${DEPLOY_PATH}"
+          bash stop.sh
+          ENDSSH
